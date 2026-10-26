@@ -1,0 +1,13 @@
+import { useContext } from 'react';
+import { BudgetContext } from './budgetContextDef';
+
+export function useBudget() {
+  const context = useContext(BudgetContext);
+  if (!context) {
+    throw new Error('useBudget must be used within a BudgetProvider');
+  }
+  return context;
+}
+
+export default useBudget;
+
