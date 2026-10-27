@@ -32,7 +32,6 @@ export default function AuthPage() {
 
     await login({
       email: loginEmail,
-      username: loginEmail,
       password: loginPassword,
     });
   };
@@ -111,13 +110,13 @@ export default function AuthPage() {
           </div>
         )}
 
-        {/* Login Form (POST /api/v1/user/token) */}
+        {/* Login Form (POST /api/v1/auth/login) */}
         {mode === 'login' && (
           <form onSubmit={handleLoginSubmit}>
             <div className="form-group">
-              <label>Email Address or Username</label>
+              <label>Email address</label>
               <input
-                type="text"
+                type="email"
                 required
                 autoComplete="username"
                 className="form-control"
@@ -151,7 +150,7 @@ export default function AuthPage() {
           </form>
         )}
 
-        {/* Register Form (POST /api/v1/users) */}
+        {/* Register Form (POST /api/v1/auth/register) */}
         {mode === 'register' && (
           <form onSubmit={handleRegisterSubmit}>
             <div className="form-group">
@@ -220,4 +219,3 @@ export default function AuthPage() {
     </div>
   );
 }
-

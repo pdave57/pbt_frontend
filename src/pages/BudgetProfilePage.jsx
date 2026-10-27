@@ -68,7 +68,7 @@ export default function BudgetProfilePage({ onOpenAddCategory, onOpenAddTx, onOp
     .sort((a, b) => (Number(b.actualAmount) || Number(b.allocatedBudget)) - (Number(a.actualAmount) || Number(a.allocatedBudget)));
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className="page-stack">
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>

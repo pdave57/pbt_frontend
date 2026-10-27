@@ -67,6 +67,36 @@ export default function Sidebar({ currentTab, setCurrentTab, mobileOpen, setMobi
         </svg>
       ),
     },
+    {
+      id: 'reports',
+      label: 'Reports',
+      icon: (
+        <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 19V5M4 19h17" strokeWidth="2" />
+          <path d="m7 15 4-4 3 2 5-6" strokeWidth="2" />
+        </svg>
+      ),
+    },
+    {
+      id: 'insights',
+      label: 'ML Insights',
+      icon: (
+        <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36-6.36-1.42 1.42M7.06 16.94l-1.42 1.42m12.72 0-1.42-1.42M7.06 7.06 5.64 5.64" strokeWidth="2" />
+          <circle cx="12" cy="12" r="4" strokeWidth="2" />
+        </svg>
+      ),
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: (
+        <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="3" strokeWidth="2" />
+          <path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.7 1l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.7-1l-1.7.7-1.4-2.4 1.4-1.1a7 7 0 0 1 0-2l-1.4-1.1 1.4-2.4 1.7.7a8 8 0 0 1 1.7-1l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.7 1l1.7-.7 1.4 2.4-1.4 1.1a7 7 0 0 1 0 2Z" strokeWidth="1.5" />
+        </svg>
+      ),
+    },
   ];
 
   const displayName = user?.name || user?.full_name || user?.email?.split('@')[0] || 'User';

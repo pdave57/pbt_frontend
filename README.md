@@ -1,16 +1,23 @@
-# React + Vite
+# Personal Budget Tracker
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React frontend for the Personal Budget Tracker API.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Use Node.js 20.19+ or 22.12+, then install the locked dependencies and start Vite:
 
-## React Compiler
+```sh
+npm ci
+npm run dev
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+By default, Vite proxies `/api` and `/health` to `http://127.0.0.1:8000`. Start the backend on that address, or set `VITE_API_URL` to a different API origin. The backend's interactive API documentation is available at `http://127.0.0.1:8000/docs`.
 
-## Expanding the Oxlint configuration
+The client uses the backend's `/api/v1/auth`, `/categories`, `/transactions`, `/budgets`, `/reports`, and `/ml` routes. Wallets are an intentionally local-only feature because the backend does not currently expose wallet endpoints. Wallet details are stored in the browser's local storage; do not enter full bank or card numbers.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## Checks
+
+```sh
+npm run lint
+npm run build
+```

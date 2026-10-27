@@ -7,7 +7,7 @@ export default function WalletsPage({ onOpenAddWallet }) {
   const totalAssets = wallets.reduce((acc, w) => acc + Number(w.balance || 0), 0);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className="page-stack">
       {/* Header bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
@@ -74,4 +74,3 @@ export default function WalletsPage({ onOpenAddWallet }) {
     </div>
   );
 }
-

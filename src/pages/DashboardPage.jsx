@@ -1,22 +1,60 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useBudget } from '../context/useBudget';
+import { formatCurrency } from '../utils/currency';
 
 export default function DashboardPage({ onNavigate, onOpenAddTx, onOpenAddBudget }) {
-  const { stats, budgets, transactions, deleteTransaction } = useBudget();
+  const { stats, budgets, transactions, rawTransactions, deleteTransaction } = useBudget();
   const [chartPeriod, setChartPeriod] = useState('6M');
+  const [today] = useState(() => new Date());
+  const [actionError, setActionError] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
+  const recentTransactions = transactions.slice(0, 5);
+  const chartData = useMemo(() => {
+    const monthCount = chartPeriod === '1M' ? 1 : chartPeriod === '1Y' ? 12 : 6;
+    return Array.from({ length: monthCount }, (_, index) => {
+      const month = new Date(today.getFullYear(), today.getMonth() - monthCount + index + 1, 1);
+      const income = rawTransactions
+        .filter((transaction) => {
+          if (transaction.type !== 'income') return false;
+          const date = transaction.transactionDate
+            ? new Date(`${transaction.transactionDate.slice(0, 10)}T00:00:00`)
+            : today;
+          return date.getFullYear() === month.getFullYear() && date.getMonth() === month.getMonth();
+        })
+        .reduce((sum, transaction) => sum + Math.abs(Number(transaction.amount) || 0), 0);
+      const expenses = rawTransactions
+        .filter((transaction) => {
+          if (transaction.type === 'income') return false;
+          const date = transaction.transactionDate
+            ? new Date(`${transaction.transactionDate.slice(0, 10)}T00:00:00`)
+            : today;
+          return date.getFullYear() === month.getFullYear() && date.getMonth() === month.getMonth();
+        })
+        .reduce((sum, transaction) => sum + Math.abs(Number(transaction.amount) || 0), 0);
+      return {
+        label: month.toLocaleString('en', { month: 'short' }),
+        income,
+        expenses,
+      };
+    });
+  }, [chartPeriod, rawTransactions, today]);
+  const chartMax = Math.max(...chartData.flatMap((item) => [item.income, item.expenses]), 1);
 
-  const formatCurrency = (val) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-    }).format(Number(val) || 0);
+  const handleDelete = async (transaction) => {
+    if (!window.confirm(`Delete the transaction “${transaction.merchant}”?`)) return;
+    setActionError('');
+    setDeletingId(transaction.id);
+    try {
+      await deleteTransaction(transaction.id);
+    } catch (error) {
+      setActionError(error.message || 'The transaction could not be deleted.');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
-  const recentTransactions = transactions.slice(0, 5);
-
   return (
-    <>
+    <div className="page-stack dashboard-page">
       {/* Stats Grid */}
       <section className="stats-grid">
         <div className="stat-card">
@@ -27,7 +65,7 @@ export default function DashboardPage({ onNavigate, onOpenAddTx, onOpenAddBudget
                 <path d="M2 10h20"></path>
               </svg>
             </div>
-            <span className="stat-trend trend-up">{stats.balanceTrend || '+12.5%'}</span>
+            <span className="stat-trend">{stats.balanceTrend || '—'}</span>
           </div>
           <div className="stat-value">{formatCurrency(stats.totalBalance)}</div>
           <div className="stat-label">Total Balance</div>
@@ -41,7 +79,7 @@ export default function DashboardPage({ onNavigate, onOpenAddTx, onOpenAddBudget
                 <polyline points="17 6 23 6 23 12"></polyline>
               </svg>
             </div>
-            <span className="stat-trend trend-up">{stats.incomeTrend || '+8.2%'}</span>
+            <span className="stat-trend">{stats.incomeTrend || '—'}</span>
           </div>
           <div className="stat-value">{formatCurrency(stats.monthlyIncome)}</div>
           <div className="stat-label">Monthly Income</div>
@@ -55,7 +93,7 @@ export default function DashboardPage({ onNavigate, onOpenAddTx, onOpenAddBudget
                 <polyline points="17 18 23 18 23 12"></polyline>
               </svg>
             </div>
-            <span className="stat-trend trend-down">{stats.expenseTrend || '-4.1%'}</span>
+            <span className="stat-trend">{stats.expenseTrend || '—'}</span>
           </div>
           <div className="stat-value">{formatCurrency(stats.monthlyExpenses)}</div>
           <div className="stat-label">Monthly Expenses</div>
@@ -69,7 +107,7 @@ export default function DashboardPage({ onNavigate, onOpenAddTx, onOpenAddBudget
                 <path d="M2 9.5h.01"></path>
               </svg>
             </div>
-            <span className="stat-trend trend-up">{stats.savingsTrend || '+15.3%'}</span>
+            <span className="stat-trend">{stats.savingsTrend || '—'}</span>
           </div>
           <div className="stat-value">{formatCurrency(stats.totalSavings)}</div>
           <div className="stat-label">Total Savings</div>
@@ -107,53 +145,34 @@ export default function DashboardPage({ onNavigate, onOpenAddTx, onOpenAddBudget
             </div>
           </div>
 
-          <div className="chart-container">
-            <svg className="chart-svg" viewBox="0 0 600 200" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.4" />
-                  <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0" />
-                </linearGradient>
-                <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#6366F1" />
-                  <stop offset="100%" stopColor="#A78BFA" />
-                </linearGradient>
-              </defs>
-
-              {/* Grid lines */}
-              <line x1="0" y1="50" x2="600" y2="50" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
-              <line x1="0" y1="100" x2="600" y2="100" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
-              <line x1="0" y1="150" x2="600" y2="150" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
-
-              {/* Area */}
-              <path
-                d="M0,160 C80,160 120,80 200,100 C280,120 320,40 400,60 C480,80 520,130 600,110 L600,200 L0,200 Z"
-                fill="url(#areaGradient)"
-              />
-              {/* Line */}
-              <path
-                d="M0,160 C80,160 120,80 200,100 C280,120 320,40 400,60 C480,80 520,130 600,110"
-                fill="none"
-                stroke="url(#lineGradient)"
-                strokeWidth="3"
-                strokeLinecap="round"
-              />
-
-              {/* Data Points */}
-              <circle cx="200" cy="100" r="5" fill="#111827" stroke="#8B5CF6" strokeWidth="2.5" />
-              <circle cx="400" cy="60" r="5" fill="#111827" stroke="#8B5CF6" strokeWidth="2.5" />
-            </svg>
+          <div
+            className="cashflow-chart"
+            style={{ gridTemplateColumns: `repeat(${chartData.length}, minmax(0, 1fr))` }}
+            role="img"
+            aria-label={`Income and expenses over the last ${chartPeriod}`}
+          >
+            {chartData.map((item, index) => (
+              <div className="cashflow-month" key={`${item.label}-${index}`}>
+                <div className="cashflow-bars">
+                  <span
+                    className="cashflow-income"
+                    title={`Income: ${formatCurrency(item.income)}`}
+                    style={{ height: `${Math.max(item.income / chartMax * 100, item.income ? 4 : 0)}%` }}
+                  />
+                  <span
+                    className="cashflow-expenses"
+                    title={`Expenses: ${formatCurrency(item.expenses)}`}
+                    style={{ height: `${Math.max(item.expenses / chartMax * 100, item.expenses ? 4 : 0)}%` }}
+                  />
+                </div>
+                <span className="cashflow-label">{item.label}</span>
+              </div>
+            ))}
           </div>
-
-          <div className="chart-legend">
-            <div className="legend-item">
-              <span className="legend-dot" style={{ background: '#8B5CF6' }}></span>
-              Income vs Expenses
-            </div>
-            <div className="legend-item">
-              <span className="legend-dot" style={{ background: '#10B981' }}></span>
-              Net Savings (+${stats.totalSavings?.toLocaleString()})
-            </div>
+          <div className="cashflow-legend">
+            <span>Income</span>
+            <span>Expenses</span>
+            <span>Net {formatCurrency(stats.totalSavings)}</span>
           </div>
         </div>
 
@@ -178,7 +197,7 @@ export default function DashboardPage({ onNavigate, onOpenAddTx, onOpenAddBudget
 
           <div className="budget-list">
             {budgets.slice(0, 4).map((b) => {
-              const percent = Math.min(Math.round((b.spent / b.total) * 100), 100);
+              const percent = b.total > 0 ? Math.min(Math.round((b.spent / b.total) * 100), 100) : 0;
               return (
                 <div key={b.id} className="budget-item">
                   <div className="budget-item-header">
@@ -186,7 +205,7 @@ export default function DashboardPage({ onNavigate, onOpenAddTx, onOpenAddBudget
                       {b.icon} {b.category}
                     </span>
                     <span className="budget-amount">
-                      <span>${b.spent}</span> / ${b.total}
+                      <span>{formatCurrency(b.spent)}</span> / {formatCurrency(b.total)}
                     </span>
                   </div>
                   <div className="progress-bar">
@@ -215,11 +234,19 @@ export default function DashboardPage({ onNavigate, onOpenAddTx, onOpenAddBudget
             >
               View Budgets →
             </button>
+            <button
+              onClick={() => onNavigate('reports')}
+              className="card-action"
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '12px' }}
+            >
+              Reports →
+            </button>
           </div>
         </div>
       </section>
 
       {/* Recent Transactions Table */}
+      {actionError && <div className="alert-box alert-error" role="alert">{actionError}</div>}
       <section className="card">
         <div className="card-header">
           <div>
@@ -295,8 +322,9 @@ export default function DashboardPage({ onNavigate, onOpenAddTx, onOpenAddBudget
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <button
-                          onClick={() => deleteTransaction(tx.id)}
+                          onClick={() => handleDelete(tx)}
                           title="Delete transaction"
+                          disabled={deletingId === tx.id}
                           style={{
                             background: 'transparent',
                             border: 'none',
@@ -320,7 +348,6 @@ export default function DashboardPage({ onNavigate, onOpenAddTx, onOpenAddBudget
           </div>
         )}
       </section>
-    </>
+    </div>
   );
 }
-

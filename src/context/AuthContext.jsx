@@ -1,68 +1,50 @@
-import { useState, useEffect, useCallback } from 'react';
-import { api, setStoredToken } from '../api';
+import { useState, useCallback } from 'react';
+import { api } from '../api';
 import { AuthContext } from './authContextDef';
 
+function getSavedUser() {
+  if (typeof window === 'undefined') return null;
+  try {
+    if (!localStorage.getItem('pbt_auth_token')) return null;
+    return JSON.parse(localStorage.getItem('pbt_user') || 'null') || {
+      email: '',
+      full_name: 'Personal account',
+    };
+  } catch (cause) {
+    console.warn('Saved account details could not be read.', cause);
+    return null;
+  }
+}
+
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [, setToken] = useState(() => localStorage.getItem('pbt_auth_token'));
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(getSavedUser);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const logout = useCallback(() => {
     api.logout();
     setUser(null);
-    setToken(null);
-    localStorage.removeItem('pbt_auth_token');
     localStorage.removeItem('pbt_user');
     setError(null);
   }, []);
 
-  // Load user profile on mount if token exists
-  useEffect(() => {
-    async function loadUser() {
-      const savedToken = localStorage.getItem('pbt_auth_token');
-      const savedUser = localStorage.getItem('pbt_user');
-
-      if (savedUser) {
-        try {
-          setUser(JSON.parse(savedUser));
-        } catch {
-          // ignore corrupted json
-        }
-      }
-
-      if (savedToken) {
-        try {
-          const profile = await api.getCurrentUser();
-          if (profile) {
-            setUser(profile);
-            localStorage.setItem('pbt_user', JSON.stringify(profile));
-          }
-        } catch (err) {
-          console.warn('Could not fetch user profile from backend:', err.message);
-          if (err.status === 401) {
-            logout();
-          }
-        }
-      }
-      setLoading(false);
-    }
-
-    loadUser();
-  }, [logout]);
+  const saveUser = (userData) => {
+    setUser(userData);
+    localStorage.setItem('pbt_user', JSON.stringify(userData));
+  };
 
   const login = async (credentials) => {
     setError(null);
     setLoading(true);
     try {
       const response = await api.login(credentials);
-      setToken(response.accessToken);
-      const userData = response.user || {
-        email: credentials.email || credentials.username,
-        name: (credentials.email || credentials.username).split('@')[0],
+      const email = credentials.email.trim();
+      const userData = {
+        email,
+        full_name: email.split('@')[0],
+        name: email.split('@')[0],
       };
-      setUser(userData);
-      localStorage.setItem('pbt_user', JSON.stringify(userData));
+      saveUser(userData);
       return { success: true, data: response };
     } catch (err) {
       const message = err.message || 'Login failed. Please check your credentials.';
@@ -77,18 +59,17 @@ export function AuthProvider({ children }) {
     setError(null);
     setLoading(true);
     try {
-      const response = await api.register(userData);
-      if (response?.access_token || response?.token) {
-        setToken(response.access_token || response.token);
-        setStoredToken(response.access_token || response.token);
-      }
-
-      const createdUser = response?.user || {
+      await api.register(userData);
+      const response = await api.login({
         email: userData.email,
-        name: userData.full_name || userData.email.split('@')[0],
-      };
-      setUser(createdUser);
-      localStorage.setItem('pbt_user', JSON.stringify(createdUser));
+        password: userData.password,
+      });
+      const displayName = userData.full_name?.trim() || userData.email.split('@')[0];
+      saveUser({
+        email: userData.email.trim(),
+        full_name: displayName,
+        name: displayName,
+      });
       return { success: true, data: response };
     } catch (err) {
       const message = err.message || 'Registration failed. Please try again.';
@@ -116,4 +97,3 @@ export function AuthProvider({ children }) {
 }
 
 export default AuthProvider;
-

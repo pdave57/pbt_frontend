@@ -1,122 +1,87 @@
 import { useState } from 'react';
 import { useBudget } from '../../context/useBudget';
+import ModalShell from '../ModalShell';
 
-export default function AddBudgetModal({ isOpen, onClose }) {
-  const { addBudget } = useBudget();
-  const [category, setCategory] = useState('');
-  const [icon, setIcon] = useState('🎯');
-  const [total, setTotal] = useState('');
-  const [spent, setSpent] = useState('0');
+export default function AddBudgetModal({ isOpen, onClose, editingBudget = null }) {
+  const { addBudget, updateBudget, categories } = useBudget();
+  const expenseCategories = categories.filter((category) => category.type === 'expense');
+  const [categoryId, setCategoryId] = useState(String(editingBudget?.category_id || ''));
+  const [amount, setAmount] = useState(String(editingBudget?.total || ''));
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  if (!isOpen) return null;
+  const selectedCategoryId = categoryId || String(expenseCategories[0]?.id || '');
 
-  const iconOptions = ['🛒', '🎬', '🚗', '💡', '🍔', '✈️', '💻', '🏋️', '📚', '🎯'];
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!category || !total) return;
-
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError('');
     setLoading(true);
-    await addBudget({
-      category,
-      icon,
-      spent: parseFloat(spent) || 0,
-      total: parseFloat(total),
-    });
-    setLoading(false);
-    onClose();
-    setCategory('');
-    setTotal('');
-    setSpent('0');
+    try {
+      if (editingBudget) {
+        await updateBudget(editingBudget.id, { amount: Number(amount) });
+      } else {
+        await addBudget({
+          category_id: Number(selectedCategoryId),
+          amount: Number(amount),
+        });
+      }
+      setAmount('');
+      onClose();
+    } catch (submitError) {
+      setError(submitError.message || 'The budget could not be saved.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>Create Monthly Budget</h3>
-          <button className="modal-close-btn" onClick={onClose}>
-            ✕
+    <ModalShell
+      isOpen={isOpen}
+      title={editingBudget ? 'Update budget' : 'Create a budget'}
+      description={editingBudget
+        ? 'Adjust this category’s spending limit.'
+        : 'Choose an expense category and set its spending limit.'}
+      onClose={onClose}
+    >
+      <form onSubmit={handleSubmit} className="modal-body">
+        <div className="form-group">
+          <label htmlFor="budget-category">Expense category</label>
+          <select
+            id="budget-category"
+            className="form-control"
+            required
+            value={selectedCategoryId}
+            onChange={(event) => setCategoryId(event.target.value)}
+            disabled={Boolean(editingBudget) || !expenseCategories.length}
+          >
+            {!expenseCategories.length && <option value="">Create an expense category first</option>}
+            {expenseCategories.map((category) => (
+              <option key={category.id} value={category.id}>{category.icon} {category.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="form-group">
+          <label htmlFor="budget-amount">Monthly limit</label>
+          <input
+            id="budget-amount"
+            className="form-control"
+            type="number"
+            min="0.01"
+            step="0.01"
+            required
+            placeholder="500.00"
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+          />
+        </div>
+        {error && <div className="alert-box alert-error" role="alert">{error}</div>}
+        <div className="modal-actions">
+          <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>Cancel</button>
+          <button type="submit" className="btn-primary" disabled={loading || (!editingBudget && !expenseCategories.length)}>
+            {loading ? 'Saving…' : editingBudget ? 'Save changes' : 'Create budget'}
           </button>
         </div>
-
-        <form onSubmit={handleSubmit} className="modal-body">
-          <div className="form-group">
-            <label>Category Name</label>
-            <input
-              type="text"
-              required
-              className="form-control"
-              placeholder="e.g. Dining Out, Travel, Gym"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Select Category Icon</label>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {iconOptions.map((ico) => (
-                <button
-                  key={ico}
-                  type="button"
-                  onClick={() => setIcon(ico)}
-                  style={{
-                    background: icon === ico ? 'var(--accent-primary)' : 'var(--bg-card)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: '8px',
-                    padding: '8px 12px',
-                    fontSize: '18px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {ico}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label>Monthly Limit ($)</label>
-              <input
-                type="number"
-                step="1"
-                min="1"
-                required
-                className="form-control"
-                placeholder="500"
-                value={total}
-                onChange={(e) => setTotal(e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Already Spent ($)</label>
-              <input
-                type="number"
-                step="1"
-                min="0"
-                className="form-control"
-                placeholder="0"
-                value={spent}
-                onChange={(e) => setSpent(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-            <button type="button" className="btn-secondary" onClick={onClose}>
-              Cancel
-            </button>
-            <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Budget'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </ModalShell>
   );
 }
-

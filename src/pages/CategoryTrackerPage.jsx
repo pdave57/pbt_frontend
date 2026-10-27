@@ -8,18 +8,43 @@ export default function CategoryTrackerPage({ onOpenAddCategory, onEditCategory,
     trackedCategories,
     deleteCategory,
     applyCategoryTemplate,
-    resetCategoriesToDefault,
+    addDefaultCategories,
   } = useBudget();
 
   const [filterType, setFilterType] = useState('ALL'); // 'ALL', 'EXPENSE', 'INCOME', 'ALERTS'
   const [showBlueprints, setShowBlueprints] = useState(false);
   const [appliedNotification, setAppliedNotification] = useState('');
+  const [actionError, setActionError] = useState('');
 
-  const handleApplyBlueprint = (key) => {
-    applyCategoryTemplate(key);
-    const title = CATEGORY_BLUEPRINTS[key]?.title || 'Blueprint';
-    setAppliedNotification(`Applied "${title}" successfully!`);
-    setTimeout(() => setAppliedNotification(''), 4000);
+  const handleApplyBlueprint = async (key) => {
+    setActionError('');
+    try {
+      await applyCategoryTemplate(key);
+      const title = CATEGORY_BLUEPRINTS[key]?.title || 'Blueprint';
+      setAppliedNotification(`Applied "${title}" successfully!`);
+      setTimeout(() => setAppliedNotification(''), 4000);
+    } catch (error) {
+      setActionError(error.message || 'The category template could not be applied.');
+    }
+  };
+
+  const handleAddDefaultCategories = async () => {
+    setActionError('');
+    try {
+      await addDefaultCategories();
+    } catch (error) {
+      setActionError(error.message || 'Default categories could not be created.');
+    }
+  };
+
+  const handleDeleteCategory = async (category) => {
+    if (!window.confirm(`Delete “${category.name}”?`)) return;
+    setActionError('');
+    try {
+      await deleteCategory(category.id);
+    } catch (error) {
+      setActionError(error.message || 'The category could not be deleted.');
+    }
   };
 
   // Filter categories
@@ -42,7 +67,7 @@ export default function CategoryTrackerPage({ onOpenAddCategory, onEditCategory,
   const nearLimitCategories = expenseCategories.filter((c) => c.status === 'Near Limit').length;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className="page-stack">
       {/* Header bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
@@ -71,6 +96,7 @@ export default function CategoryTrackerPage({ onOpenAddCategory, onEditCategory,
           <span>{appliedNotification}</span>
         </div>
       )}
+      {actionError && <div className="alert-box alert-error" role="alert">{actionError}</div>}
 
       {/* Blueprint / Setup Onboarding Drawer */}
       {showBlueprints && (
@@ -92,11 +118,11 @@ export default function CategoryTrackerPage({ onOpenAddCategory, onEditCategory,
               </p>
             </div>
             <button
-              onClick={resetCategoriesToDefault}
+              onClick={handleAddDefaultCategories}
               className="btn-secondary btn-sm"
-              title="Reset to default categories"
+              title="Add the default categories that are not already present"
             >
-              Reset to Defaults
+              Add Default Categories
             </button>
           </div>
 
@@ -388,7 +414,7 @@ export default function CategoryTrackerPage({ onOpenAddCategory, onEditCategory,
                     </button>
                     <button
                       className="btn-danger btn-sm"
-                      onClick={() => deleteCategory(cat.id)}
+                      onClick={() => handleDeleteCategory(cat)}
                       title="Delete Category"
                     >
                       Delete

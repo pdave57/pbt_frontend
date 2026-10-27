@@ -1,11 +1,23 @@
 import { useAuth } from '../context/useAuth';
 import { useBudget } from '../context/useBudget';
 
-export default function TopBar({ onOpenAddTx, onToggleMobileMenu }) {
+export default function TopBar({ currentTab = 'dashboard', onOpenAddTx, onToggleMobileMenu }) {
   const { user } = useAuth();
   const { searchQuery, setSearchQuery } = useBudget();
 
   const firstName = (user?.name || user?.full_name || user?.email?.split('@')[0] || 'User').split(' ')[0];
+  const pageTitles = {
+    'budget-profile': ['Budget profile', 'Your financial setup at a glance.'],
+    dashboard: [`Good to see you, ${firstName}`, "Here's what's happening with your finances."],
+    transactions: ['Transactions', 'Search and review your activity.'],
+    categories: ['Categories', 'Organize income and spending.'],
+    budgets: ['Budgets', 'Track limits and keep spending on course.'],
+    wallets: ['Wallets', 'Your locally saved accounts.'],
+    reports: ['Reports', 'Explore your financial trends.'],
+    insights: ['ML insights', 'Recommendations based on your activity.'],
+    settings: ['Settings', 'Manage your account and backend connection.'],
+  };
+  const [title, subtitle] = pageTitles[currentTab] || pageTitles.dashboard;
 
   return (
     <header className="top-bar">
@@ -22,8 +34,8 @@ export default function TopBar({ onOpenAddTx, onToggleMobileMenu }) {
           </svg>
         </button>
         <div className="page-title">
-          <h1>Good morning, {firstName} 👋</h1>
-          <p>Here's what's happening with your finances today.</p>
+          <h1>{title}</h1>
+          <p>{subtitle}</p>
         </div>
       </div>
 
@@ -64,4 +76,3 @@ export default function TopBar({ onOpenAddTx, onToggleMobileMenu }) {
     </header>
   );
 }
-

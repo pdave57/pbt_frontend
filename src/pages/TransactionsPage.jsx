@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useBudget } from '../context/useBudget';
 import { formatCurrency } from '../utils/currency';
 
-export default function TransactionsPage({ onOpenAddTx }) {
+export default function TransactionsPage({ onOpenAddTx, onEditTransaction }) {
   const { transactions, deleteTransaction, searchQuery, setSearchQuery } = useBudget();
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [actionError, setActionError] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
 
   const categories = Array.from(new Set(transactions.map((t) => t.category)));
 
@@ -23,8 +25,21 @@ export default function TransactionsPage({ onOpenAddTx }) {
     .filter((t) => Number(t.amount) < 0)
     .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
 
+  const handleDelete = async (transaction) => {
+    if (!window.confirm(`Delete the transaction “${transaction.merchant}”?`)) return;
+    setActionError('');
+    setDeletingId(transaction.id);
+    try {
+      await deleteTransaction(transaction.id);
+    } catch (error) {
+      setActionError(error.message || 'The transaction could not be deleted.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className="page-stack">
       {/* Header bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
@@ -37,6 +52,8 @@ export default function TransactionsPage({ onOpenAddTx }) {
           + Add Transaction
         </button>
       </div>
+
+      {actionError && <div className="alert-box alert-error" role="alert">{actionError}</div>}
 
       {/* Summary Mini Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
@@ -135,7 +152,7 @@ export default function TransactionsPage({ onOpenAddTx }) {
                   <th>Date</th>
                   <th>Status</th>
                   <th style={{ textAlign: 'right' }}>Amount</th>
-                  <th style={{ textAlign: 'center', width: '70px' }}>Delete</th>
+                  <th style={{ textAlign: 'right', width: '150px' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -169,14 +186,26 @@ export default function TransactionsPage({ onOpenAddTx }) {
                       >
                         {isPositive ? `+${formatCurrency(tx.amount)}` : `-${formatCurrency(Math.abs(tx.amount))}`}
                       </td>
-                      <td style={{ textAlign: 'center' }}>
+                      <td style={{ textAlign: 'right' }}>
+                        <div className="table-actions">
+                          <button
+                            type="button"
+                            onClick={() => onEditTransaction(tx)}
+                            className="btn-secondary btn-sm"
+                            title="Edit transaction"
+                          >
+                            Edit
+                          </button>
                         <button
-                          onClick={() => deleteTransaction(tx.id)}
+                          type="button"
+                          onClick={() => handleDelete(tx)}
                           className="btn-danger btn-sm"
                           title="Delete transaction"
+                          disabled={deletingId === tx.id}
                         >
-                          Delete
+                          {deletingId === tx.id ? 'Deleting…' : 'Delete'}
                         </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -189,4 +218,3 @@ export default function TransactionsPage({ onOpenAddTx }) {
     </div>
   );
 }
-

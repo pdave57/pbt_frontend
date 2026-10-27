@@ -1,15 +1,31 @@
+import { useState } from 'react';
 import { useBudget } from '../context/useBudget';
 import { formatCurrency } from '../utils/currency';
 
-export default function BudgetsPage({ onOpenAddBudget }) {
-  const { budgets } = useBudget();
+export default function BudgetsPage({ onOpenAddBudget, onEditBudget }) {
+  const { budgets, deleteBudget } = useBudget();
+  const [actionError, setActionError] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
 
   const totalBudgeted = budgets.reduce((acc, b) => acc + Number(b.total || 0), 0);
   const totalSpent = budgets.reduce((acc, b) => acc + Number(b.spent || 0), 0);
   const overallPercentage = totalBudgeted > 0 ? Math.round((totalSpent / totalBudgeted) * 100) : 0;
 
+  const handleDelete = async (budget) => {
+    if (!window.confirm(`Delete the ${budget.category} budget?`)) return;
+    setActionError('');
+    setDeletingId(budget.id);
+    try {
+      await deleteBudget(budget.id);
+    } catch (error) {
+      setActionError(error.message || 'The budget could not be deleted.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className="page-stack">
       {/* Header bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
@@ -22,6 +38,8 @@ export default function BudgetsPage({ onOpenAddBudget }) {
           + Create Budget
         </button>
       </div>
+
+      {actionError && <div className="alert-box alert-error" role="alert">{actionError}</div>}
 
       {/* Overview Card */}
       <div className="card" style={{ padding: '24px' }}>
@@ -55,14 +73,19 @@ export default function BudgetsPage({ onOpenAddBudget }) {
       </div>
 
       {/* Budgets Grid */}
+      {!budgets.length && (
+        <div className="card empty-state">
+          No monthly budgets yet. Create one to start tracking category limits.
+        </div>
+      )}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
         {budgets.map((b) => {
-          const percent = Math.min(Math.round((b.spent / b.total) * 100), 100);
+          const percent = b.total > 0 ? Math.min(Math.round((b.spent / b.total) * 100), 100) : 0;
           const remaining = b.total - b.spent;
           const isWarning = percent >= 85;
 
           return (
-            <div key={b.id} className="card" style={{ padding: '20px' }}>
+            <div key={b.id} className="card budget-card" style={{ padding: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ fontSize: '24px' }}>{b.icon}</span>
@@ -104,6 +127,15 @@ export default function BudgetsPage({ onOpenAddBudget }) {
                   </span>
                 </div>
               </div>
+              <div className="budget-card-actions">
+                <span className="subtle-text">{new Date(Number(b.year), Number(b.month) - 1).toLocaleString('en', { month: 'long', year: 'numeric' })}</span>
+                <div>
+                  <button type="button" className="btn-secondary btn-sm" onClick={() => onEditBudget(b)}>Edit</button>
+                  <button type="button" className="btn-danger btn-sm" onClick={() => handleDelete(b)} disabled={deletingId === b.id}>
+                    {deletingId === b.id ? 'Deleting…' : 'Delete'}
+                  </button>
+                </div>
+              </div>
             </div>
           );
         })}
@@ -111,4 +143,3 @@ export default function BudgetsPage({ onOpenAddBudget }) {
     </div>
   );
 }
-

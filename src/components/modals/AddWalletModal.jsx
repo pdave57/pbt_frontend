@@ -1,111 +1,104 @@
 import { useState } from 'react';
 import { useBudget } from '../../context/useBudget';
+import ModalShell from '../ModalShell';
 
 export default function AddWalletModal({ isOpen, onClose }) {
   const { addWallet } = useBudget();
   const [name, setName] = useState('');
   const [type, setType] = useState('Checking');
   const [balance, setBalance] = useState('');
-  const [accountNumber, setAccountNumber] = useState('');
+  const [lastFour, setLastFour] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  if (!isOpen) return null;
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!name || !balance) return;
-
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError('');
     setLoading(true);
-    await addWallet({
-      name,
-      type,
-      balance: parseFloat(balance),
-      accountNumber: accountNumber ? `**** ${accountNumber.slice(-4)}` : undefined,
-    });
-    setLoading(false);
-    onClose();
-    setName('');
-    setBalance('');
-    setAccountNumber('');
+    try {
+      await addWallet({
+        name: name.trim(),
+        type,
+        balance: Number(balance),
+        accountNumber: lastFour ? `•••• ${lastFour}` : '',
+      });
+      setName('');
+      setBalance('');
+      setLastFour('');
+      onClose();
+    } catch (submitError) {
+      setError(submitError.message || 'The account could not be saved on this device.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>Add Wallet / Bank Account</h3>
-          <button className="modal-close-btn" onClick={onClose}>
-            ✕
-          </button>
+    <ModalShell
+      isOpen={isOpen}
+      title="Add a wallet"
+      description="Wallets are saved only in this browser and are not synced to the backend."
+      onClose={onClose}
+    >
+      <form onSubmit={handleSubmit} className="modal-body">
+        <div className="form-group">
+          <label htmlFor="wallet-name">Account name</label>
+          <input
+            id="wallet-name"
+            className="form-control"
+            type="text"
+            autoFocus
+            required
+            maxLength={60}
+            placeholder="e.g. Everyday account"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
         </div>
-
-        <form onSubmit={handleSubmit} className="modal-body">
+        <div className="form-row">
           <div className="form-group">
-            <label>Account Name</label>
+            <label htmlFor="wallet-type">Account type</label>
+            <select id="wallet-type" className="form-control" value={type} onChange={(event) => setType(event.target.value)}>
+              {['Checking', 'Savings', 'Investment', 'Credit Card', 'Crypto', 'Cash'].map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label htmlFor="wallet-balance">Balance</label>
             <input
-              type="text"
+              id="wallet-balance"
+              className="form-control"
+              type="number"
+              step="0.01"
               required
-              className="form-control"
-              placeholder="e.g. Wells Fargo Savings, Coinbase ETH"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              placeholder="0.00"
+              value={balance}
+              onChange={(event) => setBalance(event.target.value)}
             />
           </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label>Account Type</label>
-              <select
-                className="form-control"
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-              >
-                <option value="Checking">Checking</option>
-                <option value="Savings">Savings</option>
-                <option value="Investment">Investment</option>
-                <option value="Credit Card">Credit Card</option>
-                <option value="Crypto">Crypto Wallet</option>
-                <option value="Cash">Cash</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Current Balance ($)</label>
-              <input
-                type="number"
-                step="0.01"
-                required
-                className="form-control"
-                placeholder="1000.00"
-                value={balance}
-                onChange={(e) => setBalance(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Last 4 Digits of Account / Card (Optional)</label>
-            <input
-              type="text"
-              maxLength={4}
-              className="form-control"
-              placeholder="e.g. 5821"
-              value={accountNumber}
-              onChange={(e) => setAccountNumber(e.target.value)}
-            />
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-            <button type="button" className="btn-secondary" onClick={onClose}>
-              Cancel
-            </button>
-            <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? 'Adding...' : 'Add Account'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </div>
+        <div className="form-group">
+          <label htmlFor="wallet-last-four">Last four digits (optional)</label>
+          <input
+            id="wallet-last-four"
+            className="form-control"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]{4}"
+            maxLength={4}
+            placeholder="1234"
+            value={lastFour}
+            onChange={(event) => setLastFour(event.target.value.replace(/\D/g, '').slice(0, 4))}
+          />
+          <small className="field-note">Do not enter a full account or card number.</small>
+        </div>
+        {error && <div className="alert-box alert-error" role="alert">{error}</div>}
+        <div className="modal-actions">
+          <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>Cancel</button>
+          <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Saving…' : 'Save wallet'}</button>
+        </div>
+      </form>
+    </ModalShell>
   );
 }
-

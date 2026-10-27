@@ -10,11 +10,15 @@ import CategoryTrackerPage from './pages/CategoryTrackerPage';
 import BudgetsPage from './pages/BudgetsPage';
 import WalletsPage from './pages/WalletsPage';
 import AuthPage from './pages/AuthPage';
+import ReportsPage from './pages/ReportsPage';
+import InsightsPage from './pages/InsightsPage';
+import SettingsPage from './pages/SettingsPage';
 
 import AddTransactionModal from './components/modals/AddTransactionModal';
 import AddBudgetModal from './components/modals/AddBudgetModal';
 import AddWalletModal from './components/modals/AddWalletModal';
 import AddCategoryModal from './components/modals/AddCategoryModal';
+import BackendStatus from './components/BackendStatus';
 
 function AppContent() {
   const { isAuthenticated, loading } = useAuth();
@@ -24,14 +28,23 @@ function AppContent() {
   // Modal states
   const [isAddTxOpen, setIsAddTxOpen] = useState(false);
   const [initialTxCategory, setInitialTxCategory] = useState(null);
+  const [editingTransaction, setEditingTransaction] = useState(null);
   const [isAddBudgetOpen, setIsAddBudgetOpen] = useState(false);
+  const [editingBudget, setEditingBudget] = useState(null);
   const [isAddWalletOpen, setIsAddWalletOpen] = useState(false);
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [initialCategoryType, setInitialCategoryType] = useState('expense');
 
   const handleOpenAddTxWithCategory = (categoryName) => {
+    setEditingTransaction(null);
     setInitialTxCategory(categoryName);
+    setIsAddTxOpen(true);
+  };
+
+  const handleOpenTransactionEditor = (transaction) => {
+    setInitialTxCategory(null);
+    setEditingTransaction(transaction);
     setIsAddTxOpen(true);
   };
 
@@ -44,6 +57,11 @@ function AppContent() {
     setEditingCategory(null);
     setInitialCategoryType(typeof type === 'string' && type === 'income' ? 'income' : 'expense');
     setIsAddCategoryOpen(true);
+  };
+
+  const handleOpenBudget = (budget = null) => {
+    setEditingBudget(budget);
+    setIsAddBudgetOpen(true);
   };
 
   if (loading) {
@@ -87,7 +105,9 @@ function AppContent() {
         {/* Main Content Area */}
         <main className="main-content">
           <TopBar
+            currentTab={currentTab}
             onOpenAddTx={() => {
+              setEditingTransaction(null);
               setInitialTxCategory(null);
               setIsAddTxOpen(true);
             }}
@@ -95,14 +115,17 @@ function AppContent() {
           />
 
           {/* Tab Pages */}
+          <BackendStatus />
+
           {currentTab === 'budget-profile' && (
             <BudgetProfilePage
               onOpenAddCategory={handleOpenNewCategory}
               onOpenAddTx={() => {
+                setEditingTransaction(null);
                 setInitialTxCategory(null);
                 setIsAddTxOpen(true);
               }}
-              onOpenAddBudget={() => setIsAddBudgetOpen(true)}
+              onOpenAddBudget={() => handleOpenBudget()}
             />
           )}
 
@@ -110,19 +133,22 @@ function AppContent() {
             <DashboardPage
               onNavigate={setCurrentTab}
               onOpenAddTx={() => {
+                setEditingTransaction(null);
                 setInitialTxCategory(null);
                 setIsAddTxOpen(true);
               }}
-              onOpenAddBudget={() => setIsAddBudgetOpen(true)}
+              onOpenAddBudget={() => handleOpenBudget()}
             />
           )}
 
           {currentTab === 'transactions' && (
             <TransactionsPage
               onOpenAddTx={() => {
+                setEditingTransaction(null);
                 setInitialTxCategory(null);
                 setIsAddTxOpen(true);
               }}
+              onEditTransaction={handleOpenTransactionEditor}
             />
           )}
 
@@ -135,27 +161,43 @@ function AppContent() {
           )}
 
           {currentTab === 'budgets' && (
-            <BudgetsPage onOpenAddBudget={() => setIsAddBudgetOpen(true)} />
+            <BudgetsPage
+              onOpenAddBudget={() => handleOpenBudget()}
+              onEditBudget={(budget) => handleOpenBudget(budget)}
+            />
           )}
 
           {currentTab === 'wallets' && (
             <WalletsPage onOpenAddWallet={() => setIsAddWalletOpen(true)} />
           )}
+
+          {currentTab === 'reports' && <ReportsPage />}
+
+          {currentTab === 'insights' && <InsightsPage />}
+
+          {currentTab === 'settings' && <SettingsPage />}
         </main>
 
         {/* Global Modals */}
         <AddTransactionModal
-          key={`tx-modal-${isAddTxOpen}-${initialTxCategory || 'default'}`}
+          key={`tx-modal-${isAddTxOpen}-${editingTransaction?.id || initialTxCategory || 'default'}`}
           isOpen={isAddTxOpen}
           initialCategory={initialTxCategory}
+          editingTransaction={editingTransaction}
           onClose={() => {
             setIsAddTxOpen(false);
             setInitialTxCategory(null);
+            setEditingTransaction(null);
           }}
         />
         <AddBudgetModal
+          key={`budget-modal-${isAddBudgetOpen}-${editingBudget?.id || 'new'}`}
           isOpen={isAddBudgetOpen}
-          onClose={() => setIsAddBudgetOpen(false)}
+          editingBudget={editingBudget}
+          onClose={() => {
+            setIsAddBudgetOpen(false);
+            setEditingBudget(null);
+          }}
         />
         <AddWalletModal
           isOpen={isAddWalletOpen}

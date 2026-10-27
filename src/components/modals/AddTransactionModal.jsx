@@ -1,193 +1,164 @@
-import { useState } from 'react';
-import { useBudget } from '../../context';
+import { useMemo, useState } from 'react';
+import { useBudget } from '../../context/useBudget';
+import ModalShell from '../ModalShell';
 
-const getInitialDate = () => new Date().toISOString().split('T')[0];
+const today = () => {
+  const date = new Date();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
 
-export default function AddTransactionModal({ isOpen, onClose, initialCategory = null }) {
-  const { addTransaction, categories } = useBudget();
-  const [formData, setFormData] = useState(() => {
-    const defaultCategory = initialCategory || (categories?.[0]?.name ?? 'Groceries');
-    const matchingCat = categories?.find((c) => c.name === defaultCategory);
-    return {
-      merchant: '',
-      category: defaultCategory,
-      type: matchingCat?.type || 'expense',
-      amount: '',
-      date: getInitialDate(),
-      status: 'Completed',
-    };
-  });
+export default function AddTransactionModal({
+  isOpen,
+  onClose,
+  initialCategory = null,
+  editingTransaction = null,
+}) {
+  const { addTransaction, updateTransaction, categories } = useBudget();
+  const [type, setType] = useState(editingTransaction?.type || 'expense');
+  const [typeChanged, setTypeChanged] = useState(false);
+  const [categoryId, setCategoryId] = useState(String(editingTransaction?.category_id || ''));
+  const [merchant, setMerchant] = useState(editingTransaction?.merchant || '');
+  const [amount, setAmount] = useState(String(Math.abs(editingTransaction?.amount || 0) || ''));
+  const [date, setDate] = useState(editingTransaction?.transactionDate?.slice(0, 10) || today());
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const matchingInitial = categories.find((category) => category.name === initialCategory);
+  const effectiveType = matchingInitial && !typeChanged ? matchingInitial.type : type;
+  const options = useMemo(
+    () => categories.filter((category) => category.type === effectiveType),
+    [categories, effectiveType],
+  );
+  const selectedCategoryId = options.some((category) => String(category.id) === categoryId)
+    ? categoryId
+    : String((matchingInitial?.type === effectiveType ? matchingInitial.id : options[0]?.id) || '');
 
-  if (!isOpen) return null;
-
-  // Derive categories list from Context or fallback
-  const categoryOptions = categories && categories.length > 0
-    ? categories.map((c) => ({ label: c.name, icon: c.icon, type: c.type }))
-    : [
-        { label: 'Groceries', icon: '🛒', type: 'expense' },
-        { label: 'Subscriptions', icon: '🎧', type: 'expense' },
-        { label: 'Income', icon: '💼', type: 'income' },
-        { label: 'Transport', icon: '🚗', type: 'expense' },
-        { label: 'Food & Drink', icon: '☕', type: 'expense' },
-        { label: 'Utilities', icon: '💡', type: 'expense' },
-        { label: 'Entertainment', icon: '🎬', type: 'expense' },
-      ];
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.merchant || !formData.amount) return;
-
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError('');
     setLoading(true);
-    const selectedCategory = categoryOptions.find((c) => c.label === formData.category);
-    const numericAmount = Math.abs(parseFloat(formData.amount));
-    const finalAmount = formData.type === 'expense' ? -numericAmount : numericAmount;
-
-    const parsedDate = new Date(formData.date);
-    const formattedDate = parsedDate.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-
-    await addTransaction({
-      merchant: formData.merchant,
-      category: formData.category,
-      icon: selectedCategory ? selectedCategory.icon : '💳',
-      amount: finalAmount,
-      date: formattedDate,
-      status: formData.status,
-    });
-
-    setLoading(false);
-    onClose();
+    try {
+      const payload = {
+        merchant: merchant.trim(),
+        category_id: Number(selectedCategoryId),
+        type: effectiveType,
+        amount: Number(amount),
+        transaction_date: date,
+      };
+      if (editingTransaction) await updateTransaction(editingTransaction.id, payload);
+      else await addTransaction(payload);
+      setMerchant('');
+      setAmount('');
+      setDate(today());
+      onClose();
+    } catch (submitError) {
+      setError(submitError.message || 'The transaction could not be saved.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>Add New Transaction</h3>
-          <button className="modal-close-btn" onClick={onClose}>
-            ✕
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="modal-body">
-          <div className="form-group">
-            <label>Transaction Type</label>
-            <div style={{ display: 'flex', gap: '10px' }}>
+    <ModalShell
+      isOpen={isOpen}
+      title={editingTransaction ? 'Edit transaction' : 'Add transaction'}
+      description={editingTransaction
+        ? 'Update the transaction details in your account.'
+        : 'Record an income or expense in your account.'}
+      onClose={onClose}
+    >
+      <form onSubmit={handleSubmit} className="modal-body">
+        <div className="form-group">
+          <label>Transaction type</label>
+          <div className="segmented-control">
+            {['expense', 'income'].map((value) => (
               <button
+                key={value}
                 type="button"
-                className={`filter-pill ${formData.type === 'expense' ? 'active' : ''}`}
-                style={{ flex: 1, textAlign: 'center' }}
-                onClick={() => setFormData({ ...formData, type: 'expense' })}
-              >
-                💸 Expense
-              </button>
-              <button
-                type="button"
-                className={`filter-pill ${formData.type === 'income' ? 'active' : ''}`}
-                style={{ flex: 1, textAlign: 'center' }}
-                onClick={() =>
-                  setFormData({
-                    ...formData,
-                    type: 'income',
-                    category: 'Income',
-                  })
-                }
-              >
-                💰 Income
-              </button>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Merchant / Description</label>
-            <input
-              type="text"
-              required
-              className="form-control"
-              placeholder="e.g. Starbucks, Acme Salary, Netflix"
-              value={formData.merchant}
-              onChange={(e) => setFormData({ ...formData, merchant: e.target.value })}
-            />
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label>Amount ($)</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0.01"
-                required
-                className="form-control"
-                placeholder="0.00"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Category</label>
-              <select
-                className="form-control"
-                value={formData.category}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  const found = categoryOptions.find((c) => c.label === val);
-                  setFormData({
-                    ...formData,
-                    category: val,
-                    type: found?.type || formData.type,
-                  });
+                className={`filter-pill ${effectiveType === value ? 'active' : ''}`}
+                onClick={() => {
+                  setType(value);
+                  setTypeChanged(true);
+                  setCategoryId('');
                 }}
               >
-                {categoryOptions.map((c) => (
-                  <option key={c.label} value={c.label}>
-                    {c.icon} {c.label} ({c.type})
-                  </option>
-                ))}
-              </select>
-            </div>
+                {value === 'expense' ? 'Expense' : 'Income'}
+              </button>
+            ))}
           </div>
+        </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label>Date</label>
-              <input
-                type="date"
-                required
-                className="form-control"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              />
-            </div>
+        <div className="form-group">
+          <label htmlFor="transaction-description">Description</label>
+          <input
+            id="transaction-description"
+            className="form-control"
+            type="text"
+            autoFocus
+            required
+            maxLength={160}
+            placeholder="e.g. Grocery shop, monthly salary"
+            value={merchant}
+            onChange={(event) => setMerchant(event.target.value)}
+          />
+        </div>
 
-            <div className="form-group">
-              <label>Status</label>
-              <select
-                className="form-control"
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              >
-                <option value="Completed">Completed</option>
-                <option value="Pending">Pending</option>
-              </select>
-            </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="transaction-amount">Amount</label>
+            <input
+              id="transaction-amount"
+              className="form-control"
+              type="number"
+              min="0.01"
+              step="0.01"
+              required
+              placeholder="0.00"
+              value={amount}
+              onChange={(event) => setAmount(event.target.value)}
+            />
           </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-            <button type="button" className="btn-secondary" onClick={onClose}>
-              Cancel
-            </button>
-            <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? 'Saving...' : 'Add Transaction'}
-            </button>
+          <div className="form-group">
+            <label htmlFor="transaction-category">Category</label>
+            <select
+              id="transaction-category"
+              className="form-control"
+              required
+              value={selectedCategoryId}
+              onChange={(event) => setCategoryId(event.target.value)}
+              disabled={!options.length}
+            >
+              {!options.length && <option value="">Create a {effectiveType} category first</option>}
+              {options.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.icon} {category.name}
+                </option>
+              ))}
+            </select>
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="transaction-date">Date</label>
+          <input
+            id="transaction-date"
+            className="form-control"
+            type="date"
+            required
+            value={date}
+            onChange={(event) => setDate(event.target.value)}
+          />
+        </div>
+
+        {error && <div className="alert-box alert-error" role="alert">{error}</div>}
+        <div className="modal-actions">
+          <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
+            Cancel
+          </button>
+          <button type="submit" className="btn-primary" disabled={loading || !options.length}>
+            {loading ? 'Saving…' : editingTransaction ? 'Save changes' : 'Save transaction'}
+          </button>
+        </div>
+      </form>
+    </ModalShell>
   );
 }
