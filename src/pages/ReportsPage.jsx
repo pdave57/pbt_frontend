@@ -128,7 +128,7 @@ export default function ReportsPage() {
         monthly: results[3].status === 'fulfilled' ? results[3].value : null,
         top: results[4].status === 'fulfilled' ? results[4].value : null,
       });
-      setError(failures.join(' '));
+      setError([...new Set(failures)].join(' '));
       setLoading(false);
     });
     return () => {

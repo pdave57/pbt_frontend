@@ -70,7 +70,7 @@ export default function AddTransactionModal({
         <div className="form-group">
           <label>Transaction type</label>
           <div className="segmented-control">
-            {['expense', 'income'].map((value) => (
+            {['income', 'expense'].map((value) => (
               <button
                 key={value}
                 type="button"

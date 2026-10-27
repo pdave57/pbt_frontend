@@ -33,7 +33,7 @@ async function apiRequest(path, options = {}) {
   const headers = new Headers(requestHeaders);
   headers.set('Accept', 'application/json');
 
-  const authToken = token || getStoredToken();
+  const authToken = Object.hasOwn(options, 'token') ? token : getStoredToken();
   if (authToken) headers.set('Authorization', `Bearer ${authToken}`);
 
   const bodyIsForm = typeof FormData !== 'undefined' && requestOptions.body instanceof FormData;
@@ -69,6 +69,15 @@ async function apiRequest(path, options = {}) {
   }
 
   if (!response.ok) {
+    if (
+      response.status === 401 &&
+      authToken &&
+      typeof window !== 'undefined' &&
+      !path.includes('/auth/')
+    ) {
+      window.dispatchEvent(new Event('pbt:session-expired'));
+    }
+
     const detail = data?.detail;
     const message = Array.isArray(detail)
       ? detail.map((item) => item.msg || JSON.stringify(item)).join(', ')
@@ -121,6 +130,7 @@ export const api = {
   async register({ email, full_name, password }) {
     return apiRequest(`${API_PREFIX}/auth/register`, {
       method: 'POST',
+      token: null,
       body: JSON.stringify({ email: email.trim(), full_name: full_name?.trim() || null, password }),
     });
   },
@@ -128,6 +138,7 @@ export const api = {
   async login({ email, password }) {
     const result = await apiRequest(`${API_PREFIX}/auth/login`, {
       method: 'POST',
+      token: null,
       body: JSON.stringify({ email: email.trim(), password }),
     });
     if (!result?.access_token) {

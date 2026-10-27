@@ -54,7 +54,7 @@ export default function AddCategoryModal({
         <div className="form-group">
           <label>Category type</label>
           <div className="segmented-control">
-            {['expense', 'income'].map((value) => (
+            {['income', 'expense'].map((value) => (
               <button
                 type="button"
                 key={value}

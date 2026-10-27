@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { api } from '../api';
 import { AuthContext } from './authContextDef';
 
@@ -26,6 +26,18 @@ export function AuthProvider({ children }) {
     setUser(null);
     localStorage.removeItem('pbt_user');
     setError(null);
+  }, []);
+
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      api.logout();
+      setUser(null);
+      localStorage.removeItem('pbt_user');
+      setError('Your session has expired. Please sign in again.');
+    };
+
+    window.addEventListener('pbt:session-expired', handleSessionExpired);
+    return () => window.removeEventListener('pbt:session-expired', handleSessionExpired);
   }, []);
 
   const saveUser = (userData) => {
