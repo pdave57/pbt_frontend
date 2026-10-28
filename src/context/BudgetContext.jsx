@@ -175,7 +175,9 @@ export function BudgetProvider({ children }) {
     setWallets(walletResult.status === 'fulfilled' ? walletResult.value : []);
 
     const currentMonthTransactions = loadedTransactions.filter((transaction) => {
-      const date = transaction.transactionDate ? new Date(transaction.transactionDate) : now;
+      const date = transaction.transactionDate
+        ? new Date(`${transaction.transactionDate.slice(0, 10)}T00:00:00`)
+        : now;
       return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
     });
     const income = currentMonthTransactions
