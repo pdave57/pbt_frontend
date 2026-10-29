@@ -79,7 +79,7 @@ export default function Sidebar({ currentTab, setCurrentTab, mobileOpen, setMobi
     },
     {
       id: 'insights',
-      label: 'ML Insights',
+      label: 'AI Insights',
       icon: (
         <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36-6.36-1.42 1.42M7.06 16.94l-1.42 1.42m12.72 0-1.42-1.42M7.06 7.06 5.64 5.64" strokeWidth="2" />

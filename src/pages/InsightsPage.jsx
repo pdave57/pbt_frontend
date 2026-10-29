@@ -31,7 +31,7 @@ export default function InsightsPage() {
       <div className="page-heading">
         <div>
           <p className="eyebrow">Patterns and nudges</p>
-          <h1>ML insights</h1>
+          <h1>AI insights</h1>
           <p>Recommendations and budget alerts generated from your activity.</p>
         </div>
         <button className="btn-secondary" type="button" onClick={fetchMlRecommendations} disabled={mlLoading}>
