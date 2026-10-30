@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
+import { useBudget } from '../context/useBudget';
 import { formatCurrency } from '../utils/currency';
 
 const today = new Date();
@@ -100,6 +101,7 @@ function ReportList({ title, data, keys, empty }) {
 }
 
 export default function ReportsPage() {
+  const { rawTransactions } = useBudget();
   const [startDate, setStartDate] = useState(firstOfMonth);
   const [endDate, setEndDate] = useState(todayString);
   const [year, setYear] = useState(String(today.getFullYear()));
@@ -148,6 +150,17 @@ export default function ReportsPage() {
   const expenseMetric = pickMetric(summary, ['total_expenses', 'total_expense', 'expenses', 'expense']);
   const savingsMetric = pickMetric(summary, ['net_savings', 'savings', 'balance', 'net_income']) ??
     (incomeMetric !== undefined && expenseMetric !== undefined ? incomeMetric - expenseMetric : undefined);
+  const transactionCount = pickMetric(summary, [
+    'transaction_count',
+    'transactions_count',
+    'total_transactions',
+    'total_transaction',
+    'number_of_transactions',
+    'count',
+  ]) ?? rawTransactions.filter((transaction) => {
+    const transactionDate = transaction.transactionDate?.slice(0, 10);
+    return transactionDate && transactionDate >= startDate && transactionDate <= endDate;
+  }).length;
 
   return (
     <div className="page-stack">
@@ -176,7 +189,7 @@ export default function ReportsPage() {
         <MetricCard label="Income" value={incomeMetric} tone="positive" />
         <MetricCard label="Expenses" value={expenseMetric} tone="negative" />
         <MetricCard label="Net savings" value={savingsMetric} />
-        <MetricCard label="Transactions" value={pickMetric(summary, ['transaction_count', 'transactions_count', 'total_transactions', 'count'])} />
+        <MetricCard label="Transactions" value={transactionCount} />
       </div>
 
       <div className="report-columns">
