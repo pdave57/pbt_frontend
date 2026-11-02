@@ -43,19 +43,41 @@ async function apiRequest(path, options = {}) {
     headers.set('Content-Type', 'application/json');
   }
 
+  const MAX_RETRIES = 3;
+  const RETRY_DELAYS = [5000, 10000, 20000];
+
+  const dispatchWaking = (detail) => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('pbt:backend-waking', { detail }));
+    }
+  };
+
   let response;
-  try {
-    response = await fetch(`${getBaseUrl()}${path}`, {
-      ...requestOptions,
-      headers,
-    });
-  } catch (cause) {
-    const error = new Error(
-      'Could not reach the backend. Check that it is running and that the API base URL is correct.',
-      { cause },
-    );
-    error.isNetworkError = true;
-    throw error;
+  let lastCause;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      response = await fetch(`${getBaseUrl()}${path}`, {
+        ...requestOptions,
+        headers,
+      });
+      // Success — dismiss any waking banner
+      if (attempt > 0) dispatchWaking({ retrying: false });
+      break;
+    } catch (cause) {
+      lastCause = cause;
+      if (attempt < MAX_RETRIES) {
+        dispatchWaking({ attempt: attempt + 1, maxAttempts: MAX_RETRIES, retrying: true });
+        await new Promise((r) => setTimeout(r, RETRY_DELAYS[attempt]));
+      } else {
+        dispatchWaking({ retrying: false });
+        const error = new Error(
+          'Could not reach the backend. Check that it is running and that the API base URL is correct.',
+          { cause: lastCause },
+        );
+        error.isNetworkError = true;
+        throw error;
+      }
+    }
   }
 
   const contentType = response.headers.get('content-type') || '';
