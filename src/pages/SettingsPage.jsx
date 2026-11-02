@@ -83,7 +83,7 @@ export default function SettingsPage() {
               onChange={(event) => setApiUrl(event.target.value)}
             />
             <small className="field-note">
-              The development proxy targets http://127.0.0.1:8000. Set an override only when your backend runs elsewhere.
+              Leave blank to use the configured backend. Set an override only when your backend runs elsewhere.
             </small>
           </div>
           <div className="settings-actions">

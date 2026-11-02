@@ -5,6 +5,7 @@ const getBaseUrl = () => {
     const savedUrl = localStorage.getItem('pbt_api_base_url');
     if (savedUrl) return savedUrl.replace(/\/+$/, '');
   }
+  if (import.meta.env.DEV) return '';
   return (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
 };
 
