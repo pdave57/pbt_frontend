@@ -35,7 +35,7 @@ const readableDate = (value) => {
 
 function normalizeTransaction(transaction, categories) {
   const category = categories.find((item) => String(item.id) === String(transaction.category_id));
-  const type = String(transaction.type || 'expense').toLowerCase();
+  const type = String(transaction.type || category?.type || transaction.category?.type || 'expense').toLowerCase();
   const amount = Math.abs(toAmount(transaction.amount));
   const transactionDate = transaction.transaction_date || transaction.date;
   return {

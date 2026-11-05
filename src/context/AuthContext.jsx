@@ -94,6 +94,58 @@ export function AuthProvider({ children }) {
 
   const clearError = () => setError(null);
 
+  const forgotPassword = async (email) => {
+    setError(null);
+    setLoading(true);
+    try {
+      const response = await api.forgotPassword({ email });
+      return { success: true, data: response };
+    } catch (err) {
+      const message = err.message || 'Failed to request password reset.';
+      setError(message);
+      return { success: false, error: message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetPassword = async ({ email, token, newPassword }) => {
+    setError(null);
+    setLoading(true);
+    try {
+      const response = await api.resetPassword({
+        email,
+        token,
+        new_password: newPassword,
+      });
+      return { success: true, data: response };
+    } catch (err) {
+      const message = err.message || 'Failed to reset password.';
+      setError(message);
+      return { success: false, error: message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const changePassword = async ({ currentPassword, newPassword }) => {
+    setError(null);
+    setLoading(true);
+    try {
+      const response = await api.changePassword({
+        current_password: currentPassword,
+        new_password: newPassword,
+      });
+      return { success: true, data: response };
+    } catch (err) {
+      const message = err.message || 'Failed to change password.';
+      setError(message);
+      return { success: false, error: message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const value = {
     user,
     isAuthenticated: Boolean(user),
@@ -102,6 +154,9 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
+    forgotPassword,
+    resetPassword,
+    changePassword,
     clearError,
   };
 

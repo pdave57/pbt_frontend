@@ -138,62 +138,6 @@ export default function BudgetProfilePage({ onOpenAddCategory, onOpenAddTx, onOp
           </div>
         </div>
 
-        {/* Add Transaction Card */}
-        <div className="card action-card" onClick={onOpenAddTx} style={{ 
-          cursor: 'pointer',
-          padding: '24px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          border: '2px dashed var(--border-subtle)',
-          transition: 'all 0.2s ease',
-        }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-              <div style={{ 
-                width: '48px', 
-                height: '48px', 
-                borderRadius: '12px', 
-                background: 'linear-gradient(135deg, #10B981, #34D399)',
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                fontSize: '22px'
-              }}>
-                💳
-              </div>
-              <div>
-                <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '2px' }}>Log Transaction</h3>
-                <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Record a new expense or income</p>
-              </div>
-            </div>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-              Quickly record spending or income with merchant, amount, category, and date.
-            </p>
-          </div>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            paddingTop: '16px',
-            borderTop: '1px solid var(--border-subtle)',
-            marginTop: '16px'
-          }}>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              {transactions.length} transactions recorded
-            </span>
-            <span style={{ 
-              background: 'var(--color-success)', 
-              color: 'white', 
-              padding: '8px 16px', 
-              borderRadius: '8px', 
-              fontSize: '12px', 
-              fontWeight: '600' 
-            }}>
-              + Log
-            </span>
-          </div>
-        </div>
 
         {/* Add Budget Card */}
         <div className="card action-card" onClick={onOpenAddBudget} style={{ 
@@ -251,6 +195,65 @@ export default function BudgetProfilePage({ onOpenAddCategory, onOpenAddTx, onOp
             </span>
           </div>
         </div>
+
+
+        {/* Add Transaction Card */}
+        <div className="card action-card" onClick={onOpenAddTx} style={{ 
+          cursor: 'pointer',
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          border: '2px dashed var(--border-subtle)',
+          transition: 'all 0.2s ease',
+        }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+              <div style={{ 
+                width: '48px', 
+                height: '48px', 
+                borderRadius: '12px', 
+                background: 'linear-gradient(135deg, #10B981, #34D399)',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                fontSize: '22px'
+              }}>
+                💳
+              </div>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '2px' }}>Log Transaction</h3>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Record a new expense or income</p>
+              </div>
+            </div>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+              Quickly record spending or income with merchant, amount, category, and date.
+            </p>
+          </div>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            paddingTop: '16px',
+            borderTop: '1px solid var(--border-subtle)',
+            marginTop: '16px'
+          }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              {transactions.length} transactions recorded
+            </span>
+            <span style={{ 
+              background: 'var(--color-success)', 
+              color: 'white', 
+              padding: '8px 16px', 
+              borderRadius: '8px', 
+              fontSize: '12px', 
+              fontWeight: '600' 
+            }}>
+              + Log
+            </span>
+          </div>
+        </div>
+
       </div>
 
       {/* Financial Overview Cards */}

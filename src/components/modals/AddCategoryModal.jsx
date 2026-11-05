@@ -28,7 +28,7 @@ export default function AddCategoryModal({
     const category = {
       name: name.trim(),
       type,
-      allocatedBudget: Number(allocatedBudget) || 0,
+      //allocatedBudget: Number(allocatedBudget) || 0,
       icon,
       description: description.trim(),
     };
@@ -96,19 +96,7 @@ export default function AddCategoryModal({
             ))}
           </div>
         </div>
-        <div className="form-group">
-          <label htmlFor="category-target">Monthly target (optional)</label>
-          <input
-            id="category-target"
-            className="form-control"
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="0.00"
-            value={allocatedBudget}
-            onChange={(event) => setAllocatedBudget(event.target.value)}
-          />
-        </div>
+       
         <div className="form-group">
           <label htmlFor="category-description">Description (optional)</label>
           <input

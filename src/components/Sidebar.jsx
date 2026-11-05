@@ -145,7 +145,15 @@ export default function Sidebar({ currentTab, setCurrentTab, mobileOpen, setMobi
 
         {/* Demo Mode Banner Removed */}
 
-        <div className="sidebar-footer">
+        <div
+          className="sidebar-footer"
+          onClick={() => {
+            setCurrentTab('settings');
+            setMobileOpen(false);
+          }}
+          style={{ cursor: 'pointer' }}
+          title="Account & Security Settings"
+        >
           <div className="user-avatar">{initials}</div>
           <div className="user-info">
             <div className="user-name" title={user?.email || displayName}>
@@ -155,7 +163,10 @@ export default function Sidebar({ currentTab, setCurrentTab, mobileOpen, setMobi
           </div>
           <button
             title="Logout"
-            onClick={logout}
+            onClick={(e) => {
+              e.stopPropagation();
+              logout();
+            }}
             style={{
               background: 'transparent',
               border: 'none',

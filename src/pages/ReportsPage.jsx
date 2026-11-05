@@ -146,7 +146,17 @@ export default function ReportsPage() {
 
   const summary = reports?.summary;
   const monthlyRows = toRows(reports?.monthly, ['months', 'monthly_summary', 'monthly_data', 'data', 'results']);
-  const incomeMetric = pickMetric(summary, ['total_income', 'income', 'totalIncome']);
+  const matchingTransactions = rawTransactions.filter((transaction) => {
+    const transactionDate = transaction.transactionDate?.slice(0, 10);
+    return transactionDate && transactionDate >= startDate && transactionDate <= endDate;
+  });
+  const localIncome = matchingTransactions
+    .filter((transaction) => transaction.type === 'income')
+    .reduce((sum, transaction) => sum + Math.abs(Number(transaction.amount) || 0), 0);
+  const reportedIncome = pickMetric(summary, ['total_income', 'income', 'totalIncome']);
+  const incomeMetric = reportedIncome === undefined || (reportedIncome === 0 && localIncome > 0)
+    ? localIncome
+    : reportedIncome;
   const expenseMetric = pickMetric(summary, ['total_expenses', 'total_expense', 'expenses', 'expense']);
   const savingsMetric = pickMetric(summary, ['net_savings', 'savings', 'balance', 'net_income']) ??
     (incomeMetric !== undefined && expenseMetric !== undefined ? incomeMetric - expenseMetric : undefined);
@@ -157,10 +167,7 @@ export default function ReportsPage() {
     'total_transaction',
     'number_of_transactions',
     'count',
-  ]) ?? rawTransactions.filter((transaction) => {
-    const transactionDate = transaction.transactionDate?.slice(0, 10);
-    return transactionDate && transactionDate >= startDate && transactionDate <= endDate;
-  }).length;
+  ]) ?? matchingTransactions.length;
 
   return (
     <div className="page-stack">
